@@ -40,7 +40,7 @@ for place in meta:
 # visualize initial illum chroma plot
 illum_chroma = np.array(illum_chroma)
 plt.plot(illum_chroma[:,:1],illum_chroma[:,1:],'ro', alpha=0.5, markersize=3)
-plt.savefig('initinal_plot.png')
+plt.savefig('cluster_result/initinal_plot.png')
 plt.clf()
 
 # K means clustering & plot
@@ -49,13 +49,15 @@ cluster_centers = kmeans.cluster_centers_
 labels = kmeans.labels_
 plt.scatter(illum_chroma[:,:1],illum_chroma[:,1:],c=labels,s=3**2)
 plt.plot(cluster_centers[:,:1],cluster_centers[:,1:], 'rx')
-plt.savefig('cluster_plot.png')
+plt.savefig('cluster_result/cluster_plot.png')
 plt.clf()
 
 # plot center point of clusters
 plt.plot(cluster_centers[:,:1],cluster_centers[:,1:], 'bo')
-plt.savefig('centers_plot.png')
+plt.savefig('cluster_result/centers_plot.png')
 plt.clf()
+# save center coordinates of clusters
+np.save('cluster.npy',cluster_centers)
 
 # insert illuminant cluster data to Json & save Json
 for i,idx in enumerate(index):
