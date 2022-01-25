@@ -4,25 +4,23 @@ from dataloader_v4 import get_loader
 
 def main(config):
 
-    train_loader = None
-    valid_loader = None
-    test_loader = None
+    loader = {}
 
     if config.mode == 'train':	
-        train_loader = get_loader(config,'train')
-        valid_loader = get_loader(config,'val')
+        loader['train'] = get_loader(config,'train')
+        loader['valid'] = get_loader(config,'val')
     elif config.mode == 'test':
         if config.checkpoint == None:
             print("[ERROR]\tCheckpoint required in test mode!")
             exit()
-        test_loader = get_loader(config,'test')
+        loader['test'] = get_loader(config,'test')
 
-    solver = Solver(config, train_loader, valid_loader, test_loader)
+    solver = Solver(config)
     # Train and sample the images
     if config.mode == 'train':
-        solver.train()
+        solver.train(loader,config)
     elif config.mode == 'test':
-        solver.test()
+        solver.test(loader,config)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -33,20 +31,17 @@ if __name__ == '__main__':
 
     # Training
     parser.add_argument('--mode', type=str, default='train')
-    parser.add_argument('--num_epochs', type=int, default=500)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--num_epochs', type=int, default=2000)
+    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--beta1', type=float, default=0.5)
     parser.add_argument('--beta2', type=float, default=0.999)
     parser.add_argument('--uv_coeff', type=float, default=1)
 
-    # Optimizer & Scheduler
-    parser.add_argument('--decay_lambda', type=int, default=0.95)
-
     # Data & Dataloader
     parser.add_argument('--data_root', type=str, default='../data/galaxy_512')
     parser.add_argument('--camera', type=str, default='galaxy')
-    parser.add_argument('--image_size', type=int, default=256)
+    parser.add_argument('--image_size', type=int, default=512)
     parser.add_argument('--image_pool', type=int, nargs='+', default=[1])
     parser.add_argument('--input_type', type=str, default='uvl', choices=['rgb','uvl'])
     parser.add_argument('--uncalculable', type=int, default=-1)

@@ -28,7 +28,13 @@ class LSMI_Classification(data.Dataset):
         self.image_list = sorted([f for f in os.listdir(os.path.join(root,split))
                                  if f.endswith(".tiff")
                                  and len(os.path.splitext(f)[0].split("_")[-1]) in image_pool
-                                 and 'gt' not in f])
+                                 and 'gt' not in f
+                                 and '496_' not in f
+                                 and '497_' not in f
+                                 and '498_' not in f
+                                 and '544_' not in f
+                                 and '709_' not in f
+                                 and '717_' not in f])
         
         # NOTE : Use clusterd json meta file
         meta_file = 'meta_clustered.json'
@@ -89,7 +95,7 @@ class LSMI_Classification(data.Dataset):
             input_rgb = input_rgb * tint_map    # apply augmentation to input image
 
         # prepare input tensor
-        ret_dict["input_rgb"] = input_rgb
+        ret_dict["input_rgb"] = input_rgb / 1023.   # NOTE : normalized RGB
         ret_dict["input_uvl"] = rgb2uvl(input_rgb)
         
         # NOTE : Do not need GT image for classification
@@ -134,9 +140,9 @@ class PairedRandomCrop():
         i,j,h,w = RandomResizedCrop.get_params(img=ret_dict['input_rgb'],scale=self.scale,ratio=self.ratio)
         ret_dict['input_rgb'] = TF.resized_crop(ret_dict['input_rgb'],i,j,h,w,self.size)
         ret_dict['input_uvl'] = TF.resized_crop(ret_dict['input_uvl'],i,j,h,w,self.size)
-        ret_dict['gt_illum'] = TF.resized_crop(ret_dict['gt_illum'],i,j,h,w,self.size)
-        ret_dict['gt_rgb'] = TF.resized_crop(ret_dict['gt_rgb'],i,j,h,w,self.size)
-        ret_dict['gt_uv'] = TF.resized_crop(ret_dict['gt_uv'],i,j,h,w,self.size)
+        # ret_dict['gt_illum'] = TF.resized_crop(ret_dict['gt_illum'],i,j,h,w,self.size)
+        # ret_dict['gt_rgb'] = TF.resized_crop(ret_dict['gt_rgb'],i,j,h,w,self.size)
+        # ret_dict['gt_uv'] = TF.resized_crop(ret_dict['gt_uv'],i,j,h,w,self.size)
         ret_dict['mask'] = TF.resized_crop(ret_dict['mask'],i,j,h,w,self.size)
         
         return ret_dict
@@ -147,9 +153,9 @@ class Resize():
     def __call__(self,ret_dict):
         ret_dict['input_rgb'] = TF.resize(ret_dict['input_rgb'],self.size)
         ret_dict['input_uvl'] = TF.resize(ret_dict['input_uvl'],self.size)
-        ret_dict['gt_illum'] = TF.resize(ret_dict['gt_illum'],self.size)
-        ret_dict['gt_rgb'] = TF.resize(ret_dict['gt_rgb'],self.size)
-        ret_dict['gt_uv'] = TF.resize(ret_dict['gt_uv'],self.size)
+        # ret_dict['gt_illum'] = TF.resize(ret_dict['gt_illum'],self.size)
+        # ret_dict['gt_rgb'] = TF.resize(ret_dict['gt_rgb'],self.size)
+        # ret_dict['gt_uv'] = TF.resize(ret_dict['gt_uv'],self.size)
         ret_dict['mask'] = TF.resize(ret_dict['mask'],self.size)
 
         return ret_dict
@@ -158,9 +164,9 @@ class ToTensor():
     def __call__(self, ret_dict):
         ret_dict['input_rgb'] = torch.from_numpy(ret_dict['input_rgb'].transpose((2,0,1)))
         ret_dict['input_uvl'] = torch.from_numpy(ret_dict['input_uvl'].transpose((2,0,1)))
-        ret_dict['gt_illum'] = torch.from_numpy(ret_dict['gt_illum'].transpose((2,0,1)))
-        ret_dict['gt_rgb'] = torch.from_numpy(ret_dict['gt_rgb'].transpose((2,0,1)))
-        ret_dict['gt_uv'] = torch.from_numpy(ret_dict['gt_uv'].transpose((2,0,1)))
+        # ret_dict['gt_illum'] = torch.from_numpy(ret_dict['gt_illum'].transpose((2,0,1)))
+        # ret_dict['gt_rgb'] = torch.from_numpy(ret_dict['gt_rgb'].transpose((2,0,1)))
+        # ret_dict['gt_uv'] = torch.from_numpy(ret_dict['gt_uv'].transpose((2,0,1)))
         ret_dict['mask'] = torch.from_numpy(ret_dict['mask'].transpose((2,0,1)))
         
         return ret_dict

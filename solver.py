@@ -3,14 +3,20 @@ import torch.nn as nn
 from torch import optim
 from torchvision.models import resnet18
 
+def lr_decay(epoch):
+    if epoch < 500:
+        return 1
+    elif epoch < 800:
+        return 0.5
+    elif epoch < 1200:
+        return 0.1
+    else:
+        return 0.05
+
 class Solver(nn.Module):
-    def __init__(self,config,train_loader,valid_loader,test_loader) -> None:
+    def __init__(self,config) -> None:
         super().__init__()
         self.config = config
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-        
-
         self.build_model(config)
 
     def build_model(self,config):
@@ -18,17 +24,17 @@ class Solver(nn.Module):
         self.net = resnet18(pretrained=True)
         self.net.fc = nn.Linear(512,config.num_classes)
         
-        # Multi-GPU setting
+        # Device setting
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if torch.cuda.device_count() > 1:
             self.net = nn.DataParallel(self.net)
         self.net.to(self.device)
 
         # Configure optimizer,scheduler
-        # without checkpoint
-        if self.config.checkpoint == None:
-            self.optimizer = optim.Adam(params=self.net.parameters(),lr=config.lr)
+        if self.config.checkpoint == None:  # start from scratch
+            self.optimizer = optim.Adam(params=self.net.parameters(),lr=config.lr, betas=[config.beta1,config.beta2])
             self.scheduler = optim.lr_scheduler.LambdaLR(optimizer=self.optimizer,
-                                                         lr_lambda=lambda epoch:config.decay_lambda**epoch,
+                                                         lr_lambda=lr_decay,
                                                          last_epoch=-1,
                                                          verbose=False)
         else:   # load from checkpoint
@@ -38,84 +44,47 @@ class Solver(nn.Module):
             self.optimizer = None
             self.scheduler = None
 
+        self.criterion = nn.CrossEntropyLoss()
+
         print('[Model]\tBuild complete.')
 
-    def train(self):
+    def train(self,loader,config):
         print("[Train]\tStart training process.")
-        best_loss = 9876543210.
-        best_mae_illum = 9876543210.
-        best_psnr = 0.
-        
-        for epoch in range(self.config.num_epochs):
-            self.epoch = epoch+1
-            self.net.train(True)
-            minibatch_count = len(self.train_loader)
 
-            # Train
-            for i, batch in enumerate(self.train_loader):
-                ret_dict = self.inference(batch,'train')
-                self.logger(mode='train',
-                            ret_dict=ret_dict,
-                            writer_itr=epoch*minibatch_count+i,
-                            epoch=epoch+1,
-                            num_epochs=self.num_epochs,
-                            batch=i+1,
-                            num_batchs=minibatch_count)
+        for epoch in range(config.num_epochs):
+            for phase in ['train','valid']:
+                if phase == 'train':
+                    self.net.train()
+                else:
+                    self.net.eval()
+                running_loss = 0.0
+                running_corrects = 0
 
-            # Validation
-            if self.epoch % self.val_step == 0:
-                self.net.eval()
-                accumulate_dict = {}
-                valid_data_count = 0
-
-                for i, batch in enumerate(self.valid_loader):
-                    ret_dict = self.inference(batch,'valid')
+                for inputs in loader[phase]:
+                    if config.input_type == 'uvl':
+                        imgs = inputs['input_uvl'].to(self.device)
+                    else:
+                        imgs = inputs['input_rgb'].to(self.device)
+                    valid_idx = torch.tensor([int(i)-1 for i in inputs['illum_count']]).unsqueeze(-1)
+                    gt_classes = torch.gather(inputs['illum_class'],1,valid_idx).squeeze().to(self.device)
                     
-                    minibatch_len = len(batch['input_rgb'])
-                    if not accumulate_dict:    # initial empty dict
-                        for key,value in ret_dict.items():
-                            accumulate_dict[key] = value * minibatch_len
-                    else:                           # accumulate valid metric
-                        for key,value in ret_dict.items():
-                            accumulate_dict[key] = accumulate_dict[key] + value * minibatch_len
-                    valid_data_count += minibatch_len
+                    outputs = self.net(imgs)
+                    _, preds = torch.max(outputs, 1)
+                    loss = self.criterion(outputs,gt_classes)
 
-                for key in accumulate_dict.keys():
-                    accumulate_dict[key] /= valid_data_count
-                self.logger(mode='valid',
-                            ret_dict=accumulate_dict,
-                            writer_itr=epoch+1,
-                            epoch=epoch+1,
-                            num_epochs=self.num_epochs)
+                    if phase == 'train':
+                        loss.backward()
+                        self.optimizer.step()
+                    
+                    running_loss += loss.item() * imgs.size(0)
+                    running_corrects += torch.sum(preds == gt_classes)
+                if phase == 'train':
+                    self.scheduler.step()
 
-                # Save best model
-                if accumulate_dict['total_loss'] < best_loss:
-                    best_loss = accumulate_dict['total_loss']
-                    best_net = self.net.module.state_dict()
-                    print(f'Best net Score : {best_loss:.4f}')
-                    torch.save(best_net, os.path.join(self.model_path, 'best_loss.pt'))
-                if accumulate_dict['MAE_illum'] < best_mae_illum:
-                    best_mae_illum = accumulate_dict['MAE_illum']
-                    best_net = self.net.module.state_dict()
-                    print(f'Best MAE_illum : {best_mae_illum:.4f}')
-                    torch.save(best_net, os.path.join(self.model_path, 'best_mae_illum.pt'))
-                if accumulate_dict['PSNR'] > best_psnr:
-                    best_psnr = accumulate_dict['PSNR']
-                    best_net = self.net.module.state_dict()
-                    print(f'Best PSNR : {best_psnr:.4f}')
-                    torch.save(best_net, os.path.join(self.model_path, 'best_psnr.pt'))
+                epoch_loss = running_loss / len(loader[phase])
+                epoch_acc = running_corrects.double() / len(loader[phase])
+                print(f'[{phase}] [{epoch+1}/{config.num_epochs}] | Loss : {epoch_loss:.4f} | Acc : {epoch_acc:.4f}')
             
-            # Save every N epoch
-            if self.save_epoch > 0 and epoch % self.save_epoch == self.save_epoch-1:
-                state_dict = self.net.module.state_dict()
-                torch.save(state_dict, os.path.join(self.model_path, str(epoch)+'.pt'))
 
-            # lr decay
-            if (epoch+1) > (self.num_epochs - self.num_epochs_decay):
-                self.lr -= (self.lr / float(self.num_epochs_decay))
-                for param_group in self.optimizer.param_groups:
-                    param_group['lr'] = self.lr
-                print(f'Decay lr to {self.lr}')
-
-    def test(self):
+    def test(self,test_loader,config):
         pass
