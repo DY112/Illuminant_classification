@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 
-N_clusters = 20
+N_clusters = 10
 
 with open('meta.json','r') as json_file:
     meta = json.load(json_file)
@@ -44,7 +44,7 @@ plt.savefig('cluster_result/initinal_plot.png')
 plt.clf()
 
 # K means clustering & plot
-kmeans = KMeans(n_clusters=20).fit(illum_chroma)
+kmeans = KMeans(n_clusters=N_clusters).fit(illum_chroma)
 cluster_centers = kmeans.cluster_centers_
 labels = kmeans.labels_
 plt.scatter(illum_chroma[:,:1],illum_chroma[:,1:],c=labels,s=3**2)

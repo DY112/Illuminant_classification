@@ -1,28 +1,36 @@
-import torch
+import torch,time,os
 import torch.nn as nn
 from torch import optim
-from torchvision.models import resnet18
+from torchvision.models import resnet50
+from torch.utils.tensorboard import SummaryWriter
 
 def lr_decay(epoch):
-    if epoch < 500:
+    if epoch < 1000:
         return 1
-    elif epoch < 800:
+    elif epoch < 1500:
         return 0.5
-    elif epoch < 1200:
-        return 0.1
+    elif epoch < 2000:
+        return 0.25
     else:
-        return 0.05
+        return 0.1
 
 class Solver(nn.Module):
     def __init__(self,config) -> None:
         super().__init__()
         self.config = config
+
+        if config.checkpoint == None:
+            self.train_date = time.strftime("%y%m%d_%H%M", time.localtime(time.time()))
+        else:
+            raise NotImplementedError()
+            self.train_date = None
+        self.writer = SummaryWriter(os.path.join('logs',self.train_date))
         self.build_model(config)
 
     def build_model(self,config):
         # Build network
-        self.net = resnet18(pretrained=True)
-        self.net.fc = nn.Linear(512,config.num_classes)
+        self.net = resnet50(pretrained=config.pretrained=='yes')
+        self.net.fc = nn.Linear(2048,config.num_classes)
         
         # Device setting
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -84,6 +92,8 @@ class Solver(nn.Module):
                 epoch_loss = running_loss / len(loader[phase])
                 epoch_acc = running_corrects.double() / len(loader[phase])
                 print(f'[{phase}] [{epoch+1}/{config.num_epochs}] | Loss : {epoch_loss:.4f} | Acc : {epoch_acc:.4f}')
+                self.writer.add_scalar(f'{phase}/Loss',epoch_loss,epoch)
+                self.writer.add_scalar(f'{phase}/Acc',epoch_acc,epoch)
             
 
     def test(self,test_loader,config):
