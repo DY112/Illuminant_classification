@@ -1,7 +1,7 @@
-import torch,time,os
+import torch,time,os,json
 import torch.nn as nn
 from torch import optim
-from torchvision.models import resnet50
+from torchvision.models import resnet34
 from torch.utils.tensorboard import SummaryWriter
 
 def lr_decay(epoch):
@@ -19,17 +19,27 @@ class Solver(nn.Module):
         super().__init__()
         self.config = config
 
+        # initialize path
         if config.checkpoint == None:
             self.train_date = time.strftime("%y%m%d_%H%M", time.localtime(time.time()))
         else:
             raise NotImplementedError()
             self.train_date = None
-        self.writer = SummaryWriter(os.path.join('logs',self.train_date))
+        self.result_path = os.path.join('results',self.train_date)
+        self.model_path = os.path.join('models',self.train_date)
+        os.makedirs(self.result_path, exist_ok=True)
+        os.makedirs(self.model_path,exist_ok=True)
+        if config.mode == 'train':
+            self.writer = SummaryWriter(os.path.join('logs',self.train_date))
+            with open(os.path.join(self.model_path,'args.txt'), 'w') as f:
+                json.dump(config.__dict__, f, indent=2)
+            f.close()
+
         self.build_model(config)
 
     def build_model(self,config):
         # Build network
-        self.net = resnet50(pretrained=config.pretrained=='yes')
+        self.net = resnet34(pretrained=config.pretrained=='yes')
         self.net.fc = nn.Linear(2048,config.num_classes)
         
         # Device setting
@@ -58,6 +68,7 @@ class Solver(nn.Module):
 
     def train(self,loader,config):
         print("[Train]\tStart training process.")
+        best_loss = 987654321.
 
         for epoch in range(config.num_epochs):
             for phase in ['train','valid']:
@@ -89,12 +100,30 @@ class Solver(nn.Module):
                 if phase == 'train':
                     self.scheduler.step()
 
+                # calculate epoch loss, acc
                 epoch_loss = running_loss / len(loader[phase])
                 epoch_acc = running_corrects.double() / len(loader[phase])
                 print(f'[{phase}] [{epoch+1}/{config.num_epochs}] | Loss : {epoch_loss:.4f} | Acc : {epoch_acc:.4f}')
                 self.writer.add_scalar(f'{phase}/Loss',epoch_loss,epoch)
                 self.writer.add_scalar(f'{phase}/Acc',epoch_acc,epoch)
+
+                # save best model
+                if phase == 'valid' and best_loss > epoch_loss:
+                    best_net = self.net.module.state_dict()
+                    torch.save(best_net,os.path.join(self.model_path,'best.pt'))
             
 
-    def test(self,test_loader,config):
-        pass
+    def test(self,loader,config):
+        print('[Test] \tStart testing process.')
+
+        for inputs in loader['test']:
+            if config.input_type == 'uvl':
+                imgs = inputs['input_uvl'].to(self.device)
+            else:
+                imgs = inputs['input_rgb'].to(self.device)
+            valid_idx = torch.tensor([int(i)-1 for i in inputs['illum_count']]).unsqueeze(-1)
+            gt_classes = torch.gather(inputs['illum_class'],1,valid_idx).squeeze().to(self.device)
+            
+            outputs = self.net(imgs)
+            _, preds = torch.max(outputs, 1)
+            

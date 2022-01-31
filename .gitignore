@@ -128,3 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 logs/*
+cluster_result/*
+meta_clustered.json
+cluster.npy

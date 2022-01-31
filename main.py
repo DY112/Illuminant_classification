@@ -27,7 +27,7 @@ if __name__ == '__main__':
     
     # Model
     parser.add_argument('--checkpoint', type=str, default=None)
-    parser.add_argument('--num_classes', type=int, default=10)
+    parser.add_argument('--num_classes', type=int, default=30)
     parser.add_argument('--pretrained', type=str, default='no')
 
     # Training
@@ -37,7 +37,6 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--beta1', type=float, default=0.5)
     parser.add_argument('--beta2', type=float, default=0.999)
-    parser.add_argument('--uv_coeff', type=float, default=1)
 
     # Data & Dataloader
     parser.add_argument('--data_root', type=str, default='../data/galaxy_512_new')
