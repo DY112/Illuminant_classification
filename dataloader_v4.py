@@ -258,10 +258,10 @@ if __name__ == "__main__":
     tsfm = transforms.Compose([ToTensor(),
                                random_crop])
 
-    data_set = LSMI_Classification(root='../data/galaxy_fullres',
-                      split='train',image_pool=[1,2,3],
-                      input_type='uvl',output_type='uv',
-                      uncalculable=-1,illum_augmentation=random_color,
+    data_set = LSMI_Classification(root='../data/galaxy_512_new',
+                      split='test',image_pool=[1],
+                      input_type='uvl',
+                      uncalculable=-1,illum_augmentation=None,
                       transform=tsfm)
 
     data_loader = data.DataLoader(data_set, batch_size=1, shuffle=False)
@@ -269,9 +269,8 @@ if __name__ == "__main__":
     for batch in data_loader:
         print(batch["img_file"])
         print(batch["illum_chroma"])
+        print(batch["illum_class"])
         print(batch["input_uvl"].shape)
-        print(batch["gt_uv"].shape)
-        print(batch["gt_illum"].shape)
         print(batch["mask"].shape)
 
         # illum_map_rb = (batch["gt_illum"]).permute(0,2,3,1).reshape((-1,2))

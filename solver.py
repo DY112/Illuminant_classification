@@ -40,7 +40,7 @@ class Solver(nn.Module):
     def build_model(self,config):
         # Build network
         self.net = resnet34(pretrained=config.pretrained=='yes')
-        self.net.fc = nn.Linear(2048,config.num_classes)
+        self.net.fc = nn.Linear(512,config.num_classes)
         
         # Device setting
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

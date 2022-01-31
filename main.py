@@ -27,7 +27,7 @@ if __name__ == '__main__':
     
     # Model
     parser.add_argument('--checkpoint', type=str, default=None)
-    parser.add_argument('--num_classes', type=int, default=30)
+    parser.add_argument('--num_classes', type=int, default=10)
     parser.add_argument('--pretrained', type=str, default='no')
 
     # Training
