@@ -4,7 +4,7 @@ Use euclidian distance as distance metric
 
 Ignored place no (outliers) : 496,497,498,544,709,717
 """
-import json
+import json,pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
@@ -65,7 +65,7 @@ plt.plot(cluster_centers[:,:1],cluster_centers[:,1:], 'bo')
 plt.savefig('cluster_result/centers_plot.png')
 plt.clf()
 # save center coordinates of clusters
-np.save('cluster.npy',cluster_centers)
+np.save('cluster_result/cluster.npy',cluster_centers)
 
 # insert illuminant cluster data to Json & save Json
 for i,idx in enumerate(index):
@@ -75,3 +75,6 @@ for i,idx in enumerate(index):
 
 with open('meta_clustered.json', 'w') as out_file:
     json.dump(meta, out_file, indent=4)
+
+with open('cluster_result/kmeans', 'wb') as pickle_file:
+    pickle.dump({'kmeans':kmeans}, pickle_file)
