@@ -1,6 +1,7 @@
 import os,cv2,json,colorsys
 import numpy as np
 import torch
+import pickle
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 from utils import *
@@ -35,6 +36,9 @@ class LSMI_Classification(data.Dataset):
                                  and '544_' not in f
                                  and '709_' not in f
                                  and '717_' not in f])
+        
+        with open('cluster_result/kmeans', 'rb') as pickle_file:
+            self.kmeans = pickle.load(pickle_file)['kmeans']
         
         # NOTE : Use clusterd json meta file
         meta_file = 'meta_clustered.json'
@@ -93,6 +97,12 @@ class LSMI_Classification(data.Dataset):
             ret_dict["illum_chroma"] *= augment_chroma
             tint_map = mix_chroma(uncalculable_masked_mixmap,augment_chroma,illum_count)
             input_rgb = input_rgb * tint_map    # apply augmentation to input image
+
+        # after augmentation, predict illum_chroma class
+        for illum_no in illum_count:
+            illum_chroma = ret_dict['illum_chroma'][int(illum_no)-1]
+            new_class = self.kmeans.predict([[illum_chroma[0], illum_chroma[2]]])
+            ret_dict["illum_class"][int(illum_no)-1] = new_class[0]
 
         # prepare input tensor
         ret_dict["input_rgb"] = input_rgb / 1023.   # NOTE : normalized RGB
@@ -259,12 +269,12 @@ if __name__ == "__main__":
                                random_crop])
 
     data_set = LSMI_Classification(root='../data/galaxy_512_new',
-                      split='test',image_pool=[1],
+                      split='train',image_pool=[1,2],
                       input_type='uvl',
-                      uncalculable=-1,illum_augmentation=None,
+                      uncalculable=-1,illum_augmentation=random_color,
                       transform=tsfm)
 
-    data_loader = data.DataLoader(data_set, batch_size=1, shuffle=False)
+    data_loader = data.DataLoader(data_set, batch_size=1, shuffle=True)
 
     for batch in data_loader:
         print(batch["img_file"])
