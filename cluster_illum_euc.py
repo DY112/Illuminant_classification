@@ -44,12 +44,20 @@ plt.savefig('cluster_result/initinal_plot.png')
 plt.clf()
 
 # K means clustering & plot
-kmeans = KMeans(n_clusters=N_clusters).fit(illum_chroma)
+kmeans = KMeans(n_clusters=N_clusters,random_state=0).fit(illum_chroma)
 cluster_centers = kmeans.cluster_centers_
 labels = kmeans.labels_
 plt.scatter(illum_chroma[:,:1],illum_chroma[:,1:],c=labels,s=3**2)
 plt.plot(cluster_centers[:,:1],cluster_centers[:,1:], 'rx')
 plt.savefig('cluster_result/cluster_plot.png')
+plt.clf()
+
+# plot distributions of labels
+dist = []
+for i in range(N_clusters):
+    dist.append(len(labels[labels==i]))
+plt.plot(range(N_clusters),dist)
+plt.savefig('cluster_result/dist_labels.png')
 plt.clf()
 
 # plot center point of clusters

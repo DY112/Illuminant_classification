@@ -5,11 +5,11 @@ from torchvision.models import resnet34
 from torch.utils.tensorboard import SummaryWriter
 
 def lr_decay(epoch):
-    if epoch < 1000:
+    if epoch < 700:
         return 1
-    elif epoch < 1500:
+    elif epoch < 1400:
         return 0.5
-    elif epoch < 2000:
+    elif epoch < 2100:
         return 0.25
     else:
         return 0.1
@@ -23,9 +23,8 @@ class Solver(nn.Module):
         if config.checkpoint == None:
             self.train_date = time.strftime("%y%m%d_%H%M", time.localtime(time.time()))
         else:
-            raise NotImplementedError()
-            self.train_date = None
-        self.result_path = os.path.join('results',self.train_date)
+            self.train_date = config.checkpoint.split('/')[0]
+        self.result_path = os.path.join('results',self.train_date+'_'+config.mode)
         self.model_path = os.path.join('models',self.train_date)
         os.makedirs(self.result_path, exist_ok=True)
         os.makedirs(self.model_path,exist_ok=True)
@@ -56,12 +55,13 @@ class Solver(nn.Module):
                                                          last_epoch=-1,
                                                          verbose=False)
         else:   # load from checkpoint
-            # TODO
-            raise NotImplementedError()
-            self.net.load_state_dict()
+            ckpt = os.path.join(self.model_path,'best.pt')
+            self.net.load_state_dict(torch.load(ckpt))
+            # TODO : train continue from checkpoint
             self.optimizer = None
             self.scheduler = None
 
+        # set loss criterion
         self.criterion = nn.CrossEntropyLoss()
 
         print('[Model]\tBuild complete.')
@@ -116,6 +116,7 @@ class Solver(nn.Module):
     def test(self,loader,config):
         print('[Test] \tStart testing process.')
 
+        running_corrects = 0
         for inputs in loader['test']:
             if config.input_type == 'uvl':
                 imgs = inputs['input_uvl'].to(self.device)
@@ -126,4 +127,8 @@ class Solver(nn.Module):
             
             outputs = self.net(imgs)
             _, preds = torch.max(outputs, 1)
-            
+            running_corrects += torch.sum(preds == gt_classes)
+
+            print(f'GT : {gt_classes}, Pred : {preds.item()}')
+        acc = running_corrects.double() / len(loader['test'])
+        print(f'ACC : {acc}')
