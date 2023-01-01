@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 
-N_clusters = 7
+N_clusters = 5
 
 with open('meta.json','r') as json_file:
     meta = json.load(json_file)
@@ -48,9 +48,17 @@ kmeans = KMeans(n_clusters=N_clusters,random_state=0).fit(illum_chroma)
 # cluster_centers contains coordinates of the centerpoints (N_clusters)
 # ex) [[1.5, 1.2], [1.1, 1.3], ...]
 cluster_centers = kmeans.cluster_centers_
+col = cluster_centers[:,0]
+idx = np.argsort(col)
+cluster_centers = cluster_centers[idx]
+print(f"centerpoints of clusters")
+print(cluster_centers)
 # labels contains the clustered class (label). ex) 0, 1, 1, 4, 6 ...
 labels = kmeans.labels_
+
+# plot all illum chroma points using cluster color (c=labels)
 plt.scatter(illum_chroma[:,:1],illum_chroma[:,1:],c=labels,s=3**2)
+# plot centerpoints of clusters
 plt.plot(cluster_centers[:,:1],cluster_centers[:,1:], 'rx')
 plt.savefig('cluster_result/cluster_plot.png')
 plt.clf()
