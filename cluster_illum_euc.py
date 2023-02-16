@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 
-N_clusters = 5
-CAMERA = 'galaxy'
+N_clusters = 7
+CAMERA = 'gsn'
 
 with open(f'meta_{CAMERA}.json','r') as json_file:
     meta = json.load(json_file)
@@ -24,26 +24,32 @@ for place in meta:
     place_meta = meta[place]
     
     l1 = place_meta['Light1']
-    if(l1[0]>10 or l1[2]>3): print(place,l1)
-    illum_chroma.append([l1[0],l1[2]])
-    color = [item / max(l1[0],1.,l1[2]) for item in [l1[0],1.,l1[2]]]
-    colors.append(color)
-    index.append(place+'_Light1')
+    if(l1[0]>10 or l1[2]>3):
+        print(place,l1)
+    else:
+        illum_chroma.append([l1[0],l1[2]])
+        color = [item / max(l1[0],1.,l1[2]) for item in [l1[0],1.,l1[2]]]
+        colors.append(color)
+        index.append(place+'_Light1')
 
     l2 = place_meta['Light2']
-    if(l2[0]>10 or l2[2]>3): print(place,l2)
-    illum_chroma.append([l2[0],l2[2]])
-    color = [item / max(l2[0],1.,l2[2]) for item in [l2[0],1.,l2[2]]]
-    colors.append(color)
-    index.append(place+'_Light2')
+    if(l2[0]>10 or l2[2]>3):
+        print(place,l2)
+    else:
+        illum_chroma.append([l2[0],l2[2]])
+        color = [item / max(l2[0],1.,l2[2]) for item in [l2[0],1.,l2[2]]]
+        colors.append(color)
+        index.append(place+'_Light2')
     
     if place_meta['NumOfLights'] == 3:
         l3 = place_meta['Light3']
-        if(l3[0]>10 or l3[2]>3): print(place,l3)
-        illum_chroma.append([l3[0],l3[2]])
-        color = [item / max(l3[0],1.,l3[2]) for item in [l3[0],1.,l3[2]]]
-        colors.append(color)
-        index.append(place+'_Light3')
+        if(l3[0]>10 or l3[2]>3):
+            print(place,l3)
+        else:
+            illum_chroma.append([l3[0],l3[2]])
+            color = [item / max(l3[0],1.,l3[2]) for item in [l3[0],1.,l3[2]]]
+            colors.append(color)
+            index.append(place+'_Light3')
 
 # visualize initial illum chroma plot
 illum_chroma = np.array(illum_chroma)
