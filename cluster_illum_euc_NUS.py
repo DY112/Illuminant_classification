@@ -8,12 +8,13 @@ import json,pickle,scipy,os
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
+from scipy import io
 
 nus_root = '../dataset/NUS-8/'
 N_clusters = 7
-CAMERA = 'Canon1DsMkIII'
+CAMERA = 'NikonD5200'
 
-meta = scipy.io.loadmat(os.path.join(nus_root,CAMERA,f'{CAMERA}_gt.mat'))['groundtruth_illuminants']
+meta = io.loadmat(os.path.join(nus_root,CAMERA,f'{CAMERA}_gt.mat'))['groundtruth_illuminants']
 meta = (meta / meta[:,[1]])[:,[0,2]]
 
 index = []
@@ -32,9 +33,21 @@ for i in range(len(meta)):
 # visualize initial illum chroma plot
 illum_chroma = np.array(illum_chroma)
 for i in range(len(illum_chroma)):
-    plt.plot(illum_chroma[i,:1],illum_chroma[i,1:], c=colors[i], marker='o', alpha=0.5, markersize=5)
+    plt.plot(illum_chroma[i,:1],illum_chroma[i,1:], c=color, marker='o', alpha=0.5, markersize=5)
 plt.savefig(f'cluster_result/{CAMERA}_initinal_plot.png')
 plt.clf()
+
+# illum_chroma = np.array(illum_chroma)
+# for i in range(len(illum_chroma)):
+#     if i <= 181:
+#         split_color = 'r'
+#     elif i <= 233:
+#         split_color = 'g'
+#     elif i <= 259:
+#         split_color = 'b'
+#     plt.plot(illum_chroma[i,:1],illum_chroma[i,1:], c=split_color, marker='o', alpha=0.5, markersize=5)
+# plt.savefig(f'cluster_result/{CAMERA}_initinal_split_plot.png')
+# plt.clf()
 
 # K means clustering & plot
 kmeans = KMeans(n_clusters=N_clusters,random_state=0).fit(illum_chroma)
