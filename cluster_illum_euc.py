@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 
-N_clusters = 3
+N_clusters = 7
 CAMERA = 'galaxy'
-USE_RB_CHROMATICITY = True
-USE_G1_CHROMATICITY = False
+USE_RB_CHROMATICITY = False
+USE_G1_CHROMATICITY = True
 CLUSTER_SAVE_DIR = '../Slot-IID/datasets/rb_clusters/'
 
 with open(f'meta_{CAMERA}.json','r') as json_file:
@@ -30,13 +30,13 @@ sub_colors = []
 for place in meta:
     place_meta = meta[place]
     
-    l1 = place_meta['Light1']
+    l1 = np.array(place_meta['Light1'])
     if USE_RB_CHROMATICITY:
         l1 = l1 / np.sum(l1)
     elif USE_G1_CHROMATICITY:
         pass
 
-    if True in np.isnan(l1) or l1[0] > 10:
+    if True in np.isnan(l1) or l1[0] > 10 or l1[2] > 4:
         print(place,l1)
     else:
         if USE_G1_CHROMATICITY:
@@ -50,13 +50,13 @@ for place in meta:
         l1_colors.append(color)
         index.append(place+'_Light1')
 
-    l2 = place_meta['Light2']
+    l2 = np.array(place_meta['Light2'])
     if USE_RB_CHROMATICITY:
         l2 = l2 / np.sum(l2)
     elif USE_G1_CHROMATICITY:
         pass
 
-    if True in np.isnan(l2) or l2[0] > 10:
+    if True in np.isnan(l2) or l2[0] > 10 or l2[2] > 4:
         print(place,l2)
     else:
         if USE_G1_CHROMATICITY:
@@ -71,13 +71,13 @@ for place in meta:
         index.append(place+'_Light2')
     
     if place_meta['NumOfLights'] == 3:
-        l3 = place_meta['Light3']
+        l3 = np.array(place_meta['Light3'])
         if USE_RB_CHROMATICITY:
             l3 = l3 / np.sum(l3)
         elif USE_G1_CHROMATICITY:
             pass
 
-        if True in np.isnan(l3) or l3[0] > 10:
+        if True in np.isnan(l3) or l3[0] > 10 or l3[2] > 4:
             print(place,l3)
         else:
             if USE_G1_CHROMATICITY:
@@ -164,7 +164,7 @@ elif USE_RB_CHROMATICITY:
 plt.savefig(f'cluster_result/{CAMERA}_{N_clusters}_centers_plot.png')
 plt.clf()
 # save center coordinates of clusters
-np.save(os.path.join(CLUSTER_SAVE_DIR, f'{CAMERA}_{N_clusters}_cluster.npy'), cluster_centers)
+# np.save(os.path.join(CLUSTER_SAVE_DIR, f'{CAMERA}_{N_clusters}_cluster.npy'), cluster_centers)
 
 # # insert illuminant cluster data to Json & save Json
 # for i,idx in enumerate(index):
