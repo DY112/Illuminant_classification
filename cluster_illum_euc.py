@@ -164,7 +164,7 @@ elif USE_RB_CHROMATICITY:
 plt.savefig(f'cluster_result/{CAMERA}_{N_clusters}_centers_plot.png')
 plt.clf()
 # save center coordinates of clusters
-# np.save(os.path.join(CLUSTER_SAVE_DIR, f'{CAMERA}_{N_clusters}_cluster.npy'), cluster_centers)
+np.save(os.path.join(CLUSTER_SAVE_DIR, f'{CAMERA}_{N_clusters}_cluster.npy'), cluster_centers)
 
 # # insert illuminant cluster data to Json & save Json
 # for i,idx in enumerate(index):
